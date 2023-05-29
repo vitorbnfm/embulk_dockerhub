@@ -1,2 +1,3 @@
-embulk-input-postgresql
-embulk-output-postgresql
+gem 'embulk-input-postgresql'
+gem 'embulk-output-postgresql'
+

@@ -1,24 +1,22 @@
-FROM amazoncorretto:8
+FROM ibm-semeru-runtimes:open-8-jre AS stage
 
+RUN apt update && \
+    apt install -y awscli
+
+FROM ibm-semeru-runtimes:open-8-jre AS runtime
 ARG EMBULK_VERSION=${EMBULK_VERSION:-"latest"}
 
-
-RUN yum -y update &&\
-    yum -y install unzip &&\
-    amazon-linux-extras install ruby2.6 &&\
-    yum -y clean metadata &&\
-    yum -y install ruby ruby-devel &&\
-    curl --create-dirs -o /opt/embulk/embulk -L "https://dl.embulk.org/embulk-${EMBULK_VERSION}.jar"
-    
 WORKDIR /opt/embulk
 
-COPY ["install_plugins.sh", "plugins.txt", "./"]
+COPY plugins.txt jars/ ./
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 
-RUN chmod +x ./embulk &&\
-    chmod +x ./install_plugins.sh &&\
-    chmod +x /usr/local/bin/entrypoint.sh &&\
-    ./install_plugins.sh
+RUN curl -o embulk -L "https://dl.embulk.org/embulk-${EMBULK_VERSION}.jar" && \
+    chmod +x ./embulk && \
+    chmod +x /usr/local/bin/entrypoint.sh && \
+    ./embulk gem install -g plugins.txt --clear-sources
+
+COPY --from=stage /usr/bin/aws /usr/local/bin/aws
 
 CMD ["--help"]
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
